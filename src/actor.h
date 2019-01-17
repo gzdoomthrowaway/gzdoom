@@ -1133,6 +1133,7 @@ public:
 	int				waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
 	double			waterdepth;		// Stores how deep into water you are, in map units
 	uint8_t			boomwaterlevel;	// splash information for non-swimmable water sectors
+	double			Buoyancy;		// controls desired Z velocity in water
 	uint8_t			MinMissileChance;// [RH] If a random # is > than this, then missile attack.
 	int8_t			LastLookPlayerNumber;// Player number last looked for (if TIDtoHate == 0)
 	ActorBounceFlags	BounceFlags;	// which bouncing type?
