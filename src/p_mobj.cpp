@@ -2764,14 +2764,13 @@ void AActor::FallAndSink(double grav, double oldfloorz)
 			double sinkspeed = fabs(targetVZ);
 
 			// Only do this when buoyant, so default sink behavior is unaffected
-			if (targetVZ > 0)
+			if (targetVZ > 0 && Height > waterdepth)
 			{
-				double distFromFloat = waterdepth - (Height / 2);
+				double abovewater = MAX(0.0, Height - waterdepth);
+				double sinkscale  = abovewater / Height;
 
-				if (distFromFloat < targetVZ)
-				{
-					targetVZ -= ((targetVZ - distFromFloat) / 2);
-				}
+				targetVZ  -= (targetVZ + 1) * sinkscale;
+				sinkspeed = MAX(0.0, sinkspeed - (sinkspeed * sinkscale * 2));
 			}
 
 			if (sinkspeed != 0 && endVZ != targetVZ)
@@ -2801,30 +2800,34 @@ void AActor::FallAndSink(double grav, double oldfloorz)
 
 		if (waterlevel == 1)
 		{
-			endVZ += gravZ;
+			// Mostly like this for legacy reasons
+			if (Buoyancy < WATER_SINK_SPEED)
+			{
+				endVZ += gravZ;
+			}
+			else
+			{
+				// This breaks down once sinkspeed exceeds actor height,
+				//  but until then, the player's bobbing will stabilize eventually
+				double gravfactor = 1 - (waterdepth * 2) / Height;
+				endVZ += gravZ * gravfactor;
+			}	
 		}
-		else if (gravZ != 0 && Buoyancy != WATER_SINK_SPEED)
+		else if (waterlevel > 1 && gravZ != 0 && Buoyancy != WATER_SINK_SPEED)
 		{
 			double sinkspeed = Buoyancy - WATER_SINK_SPEED;
 			gravZ *= sinkspeed / -WATER_SINK_SPEED;
 
-			// Easy way to flip the comparison direction
+			// Flips comparison direction
 			int sign = sinkspeed < 0 ? -1 : 1;
 
 			if (Vel.Z * sign <= sinkspeed * sign)
 			{
-				double zmod = 0;
+				double zmod = gravZ * WATER_SINK_FACTOR;
 
-				if ((Vel.Z + gravZ) * sign > sinkspeed * sign)
+				if ((Vel.Z + zmod) * sign > sinkspeed * sign)
 				{
 					zmod = sinkspeed - Vel.Z;
-				}
-				else
-				{
-					// there was a check to apply WATER_SINK_SMALL_FACTOR if
-					//  waterlevel == 1, but that was never possible, so it's gone
-					//  (along with the constant)
-					zmod = gravZ * WATER_SINK_FACTOR;
 				}
 
 				if (zmod > 0)
